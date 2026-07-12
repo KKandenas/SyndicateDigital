@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Noir Syndicate — Underworld Engine</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <h1>NOIR SYNDICATE</h1>
+        <div class="subtitle">Underworld Matrix</div>
+
+        <!-- STARTSKÄRM -->
+        <div class="screen active" id="start-screen">
+            <button id="create-room-btn">💼 Skapa nytt spelrum</button>
+            <button id="join-setup-btn" class="btn-secondary" style="margin-top: 5px;">📱 Gå med i rum</button>
+        </div>
+
+        <!-- NAMN FÖR RUMSSKAPARE (nytt: krävs innan rum skapas) -->
+        <div class="screen" id="host-name-screen">
+            <input type="text" id="host-name-input" placeholder="Ditt namn" maxlength="12">
+            <button id="confirm-create-room-btn" class="btn-success">Skapa rum 🚀</button>
+            <button id="go-back-btn" class="btn-secondary">Tillbaka</button>
+        </div>
+
+        <!-- ANSLUT -->
+        <div class="screen" id="join-screen">
+            <input type="text" id="join-code-input" placeholder="RUMSKOD" maxlength="4" style="text-transform: uppercase;">
+            <input type="text" id="join-name-input" placeholder="Ditt namn" maxlength="12">
+            <button id="execute-join-btn" class="btn-success">Gå med 🎲</button>
+            <button id="go-back-btn-2" class="btn-secondary">Tillbaka</button>
+        </div>
+
+        <!-- LOBBY -->
+        <div class="screen" id="lobby-screen">
+            <div class="room-code-display" id="display-code">----</div>
+            <div class="player-list" id="player-list-box"></div>
+            <button id="start-game-btn" class="btn-success" style="margin-top: 10px; display: none;">STARTA SPELET 🚀</button>
+        </div>
+
+        <!-- SPELSKÄRM -->
+        <div class="screen" id="game-screen">
+            <div id="turn-indicator" class="turn-indicator">Laddar...</div>
+
+            <div class="hud-grid">
+                <div class="hud-item" style="border-left-color: #ecc94b; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><span id="hud-gang">...</span></div>
+                <div class="hud-item hud-booze" id="hud-booze">📦 Sprit: 0/3</div>
+                <div class="hud-item hud-cash" id="hud-cash">💵 Fickan: $0</div>
+            </div>
+            <div class="hud-grid" style="margin-top: -6px;">
+                <div class="hud-item hud-cash" id="hud-bank" style="grid-column: span 3; background: #132316; font-weight: bold; font-size: 9px;">🏦 Bank / Klubb-info...</div>
+            </div>
+
+            <div class="map-viewport">
+                <div class="map-container" id="map-board"></div>
+            </div>
+
+            <div class="control-panel">
+                <div class="dpad-container">
+                    <div></div><button class="dpad-btn" data-dx="0" data-dy="-1">▲</button><div></div>
+                    <button class="dpad-btn" data-dx="-1" data-dy="0">◀</button><div style="background: #1a1a1a;"></div><button class="dpad-btn" data-dx="1" data-dy="0">▶</button>
+                    <div></div><button class="dpad-btn" data-dx="0" data-dy="1">▼</button><div></div>
+                </div>
+
+                <div class="action-container">
+                    <button id="primary-action-btn" class="btn-action" style="display:none;">Aktion 1</button>
+                    <button id="secondary-action-btn" class="btn-action" style="display:none;">Aktion 2</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script type="module" src="js/game.js"></script>
+</body>
+</html>
