@@ -1,0 +1,182 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+body {
+    background-color: #0a0a0a;
+    color: #e5e5e5;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+.container {
+    width: 100%;
+    max-width: 430px;
+    background: #121212;
+    border: 1px solid #222;
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+    text-align: center;
+}
+
+h1 { font-size: 20px; letter-spacing: 4px; margin-bottom: 2px; color: #fff; font-weight: 900; }
+.subtitle { font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 12px; }
+.screen { display: none; }
+.screen.active { display: flex; flex-direction: column; gap: 10px; }
+
+input {
+    width: 100%; background: #1a1a1a; border: 1px solid #333;
+    color: #fff; padding: 12px; border-radius: 6px; font-size: 16px; text-align: center;
+}
+
+button {
+    width: 100%; background: #1e3a8a; color: white; border: none;
+    padding: 14px; font-size: 14px; font-weight: bold; border-radius: 6px;
+    cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+    transition: transform 0.08s ease, filter 0.15s ease;
+}
+button:active { transform: scale(0.98); }
+button:disabled { background: #222 !important; color: #555 !important; cursor: not-allowed; border: 1px solid #333; }
+.btn-secondary { background: #222; border: 1px solid #333; color: #aaa; }
+.btn-success { background: #15803d; }
+.btn-police { background: #1d4ed8; }
+.btn-gang { background: #b45309; }
+
+.room-code-display {
+    font-size: 32px; font-weight: 900; letter-spacing: 5px; color: #ecc94b;
+    margin: 10px 0; background: #1a1a1a; padding: 10px; border-radius: 6px; border: 1px dashed #ecc94b;
+}
+
+.player-list { text-align: left; background: #161616; border-radius: 6px; padding: 10px; border: 1px solid #222; }
+.player-item { padding: 8px 5px; border-bottom: 1px solid #222; font-size: 13px; display: flex; justify-content: space-between; }
+
+/* MOBILANPASSAD FIXERAD KARTA */
+.map-viewport {
+    width: 100%;
+    background: #0d0d0d;
+    border: 2px solid #222;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.map-container {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: 3px;
+    padding: 4px;
+}
+.map-tile {
+    background: #141414; border: 1px solid #222; border-radius: 4px;
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: 3px 1px; font-size: 8px; font-weight: bold; position: relative;
+    overflow: hidden;
+}
+.tile-hq-black { border: 1.5px solid #555; background: #1f1f1f; color: #fff; }
+.tile-hq-red { border: 1.5px solid #991b1b; background: #3f0c0c; color: #fca5a5; }
+.tile-street-black { border-left: 2.5px solid #333; }
+.tile-street-red { border-left: 2.5px solid #dc2626; }
+.tile-port { border: 1.5px solid #0284c7; background: #0c4a6e; color: #bae6fd; }
+.tile-police { border: 1.5px solid #e11d48; background: #4c0519; color: #ffe4e6; }
+
+.tile-title { text-transform: uppercase; font-size: 7px; letter-spacing: 0.1px; text-align: center; z-index: 2; line-height: 1.1; }
+
+.secret-overlay {
+    position: absolute; top: 1px; left: 1px; right: 1px; bottom: 1px;
+    border-radius: 3px; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; font-size: 10px; font-weight: 900; z-index: 1;
+}
+.overlay-club { background: rgba(124, 58, 237, 0.45); border: 1.5px solid #7c3aed; color: #ddd; }
+.overlay-stash { background: rgba(22, 163, 74, 0.45); border: 1.5px solid #16a34a; color: #ddd; }
+.overlay-text { font-size: 6.5px; text-transform: uppercase; margin-top: 1px; font-weight: bold; }
+
+.presence-container { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; width: 100%; z-index: 3; }
+.player-token {
+    width: 20px; height: 20px; border-radius: 50%; font-size: 8px; color: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-weight: 900; border: 1.5px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.6); line-height: 1;
+}
+/* Tydligare markering av spelarens egen bricka (ny) */
+.player-token.token-me {
+    box-shadow: 0 0 0 2px #ecc94b, 0 2px 6px rgba(0,0,0,0.7);
+    transform: scale(1.08);
+}
+.token-symbol { font-size: 7px; margin-bottom: -1px; display: none; }
+.token-spades { background: #2563eb; border-color: #60a5fa; }
+.token-hearts { background: #dc2626; border-color: #fca5a5; }
+.token-clovers { background: #16a34a; border-color: #4ade80; }
+.token-diamonds { background: #d97706; border-color: #fcd34d; }
+/* Polisens bricka är tydligt avvikande: blå ring + pulserande glow (ny) */
+.token-police {
+    background: #4f46e5;
+    border-color: #a5b4fc;
+    box-shadow: 0 0 0 2px #fff, 0 0 8px 2px rgba(79, 70, 229, 0.8);
+    animation: police-pulse 1.6s ease-in-out infinite;
+}
+@keyframes police-pulse {
+    0%, 100% { box-shadow: 0 0 0 2px #fff, 0 0 6px 1px rgba(79, 70, 229, 0.7); }
+    50% { box-shadow: 0 0 0 2px #fff, 0 0 12px 4px rgba(79, 70, 229, 0.95); }
+}
+
+.hud-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+    background: #161616; padding: 6px; border-radius: 6px; font-size: 10px; border: 1px solid #222; text-align: left;
+}
+.hud-item { background: #1f1f1f; padding: 4px 5px; border-radius: 4px; border-left: 3px solid #555; }
+.hud-cash { border-left-color: #16a34a; }
+.hud-booze { border-left-color: #7c3aed; }
+.turn-indicator { text-align: center; padding: 6px; font-weight: bold; font-size: 12px; border-radius: 6px; background: #222; color: #aaa; transition: background 0.2s, color 0.2s; }
+.turn-active { background: #14532d; border-color: #22c55e; color: #22c55e; }
+
+.control-panel { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
+.dpad-container { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 4px; width: 120px; }
+.dpad-btn { background: #222; border: 1px solid #333; color: #fff; padding: 10px 0; font-size: 14px; border-radius: 6px; font-weight: bold; }
+.dpad-btn:active { background: #444; }
+.action-container { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+
+/* --- Toast-meddelanden (ersätter alert()) --- */
+#toast-container {
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 24px);
+    max-width: 406px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 1000;
+    pointer-events: none;
+}
+.toast {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-left: 4px solid #666;
+    color: #eee;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.toast-visible { opacity: 1; transform: translateY(0); }
+.toast-success { border-left-color: #22c55e; }
+.toast-warning { border-left-color: #ecc94b; }
+.toast-police { border-left-color: #4f46e5; }
+.toast-gang { border-left-color: #b45309; }
+.toast-info { border-left-color: #0284c7; }
