@@ -18,6 +18,13 @@ let amILeader = false;
 let stopRoomListener = null;
 let insideTurnStartTrigger = false; // förhindrar att turstarts-inkomst triggas flera gånger per tur
 
+// Löpnummer för senaste mottagna rumshändelse. Med flera spelare aktiva
+// samtidigt kan flera async-anrop till handlePlayingState överlappa —
+// utan detta kunde ett äldre, långsammare anrop hinna klart EFTER ett
+// nyare och då rita skärmen med inaktuell data (spelaren såg markören
+// "fastna" trots att positionen i databasen redan var korrekt).
+let latestEventSeq = 0;
+
 // ---------- Tur-/AP-motorn ----------
 
 /**
@@ -109,12 +116,15 @@ function startListening(roomCode) {
         if (data.players) ui.renderPlayerList(data.players);
 
         if (data.status === "playing") {
-            handlePlayingState(roomCode, data);
+            const mySeq = ++latestEventSeq;
+            handlePlayingState(roomCode, data, mySeq);
         }
     });
 }
 
-async function handlePlayingState(roomCode, data) {
+async function handlePlayingState(roomCode, data, mySeq) {
+    // Kartan ritas alltid direkt och synkront med den senast mottagna datan,
+    // så positionen på skärmen är aldrig fördröjd av något await nedanför.
     ui.showScreen("game-screen");
     ui.renderCityMap(data.players, data.secrets, myPlayerId);
 
@@ -129,6 +139,10 @@ async function handlePlayingState(roomCode, data) {
     if (isMyTurn && !insideTurnStartTrigger) {
         insideTurnStartTrigger = true;
         await handleTurnStartIncome(roomCode, myPlayerId, data);
+        // Ett nyare event kan ha kommit in medan vi väntade ovan. Om så är
+        // fallet har den redan ritat en färskare bild — avbryt här istället
+        // för att skriva över den med denna (nu inaktuella) omgångs data.
+        if (mySeq !== latestEventSeq) return;
     }
     if (!isMyTurn) insideTurnStartTrigger = false;
 
@@ -149,6 +163,7 @@ async function handlePlayingState(roomCode, data) {
     } else if (me.x === 2 && me.y === 2) {
         await policeDeposit(roomCode, myPlayerId, me);
     }
+    if (mySeq !== latestEventSeq) return; // se kommentar ovan
 }
 
 function wireActionButtons(roomCode, data, me, meIsPolice) {
