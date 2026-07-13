@@ -8,7 +8,7 @@ import { cityMapData, isStreetTile, isPortTile } from "./map.js";
 import { createRoom, joinRoom, assignRolesAndStart, isPolice } from "./players.js";
 import { movePlayer } from "./movement.js";
 import { directFightOrArrest, blindSearchTile, canFightHere, getValidCombatTargets } from "./combat.js";
-import { getBoozeFromPort, handleTurnStartIncome, collectAtClubOrStash, policeDeposit } from "./economy.js";
+import { getBoozeFromPort, handleTurnStartIncome } from "./economy.js";
 import * as ui from "./ui.js";
 
 // --- Modul-state (enda källan till sanning för klientens session) ---
@@ -156,13 +156,6 @@ async function handlePlayingState(roomCode, data, mySeq) {
     if (!isMyTurn) return;
 
     wireActionButtons(roomCode, data, me, meIsPolice);
-
-    // Automatiska upphämtningar vid egen klubb/gömma resp. polisens statskassa.
-    if (!meIsPolice) {
-        await collectAtClubOrStash(roomCode, myPlayerId, me, mySecret);
-    } else if (me.x === 2 && me.y === 2) {
-        await policeDeposit(roomCode, myPlayerId, me);
-    }
     if (mySeq !== latestEventSeq) return; // se kommentar ovan
 }
 
