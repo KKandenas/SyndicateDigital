@@ -44,6 +44,20 @@ export async function movePlayer(roomCode, myPlayerId, dx, dy) {
         return;
     }
 
+    // TILLFÄLLIG DIAGNOS — visar exakt vad koden jämför. Tas bort igen
+    // så fort vi hittat orsaken till leverans-buggen.
+    if (!meIsPolice && room.secrets && room.secrets[myPlayerId]) {
+        const s = room.secrets[myPlayerId];
+        toast(
+            `DEBUG: ankom (${nX},${nY}) | klubb=(${s.club ? s.club.x : "?"},${s.club ? s.club.y : "?"}) | ` +
+            `gömma=(${s.stash ? s.stash.x : "?"},${s.stash ? s.stash.y : "?"}) | booze=${me.booze}`,
+            "info",
+            6000
+        );
+    } else {
+        toast(`DEBUG: ankom (${nX},${nY}) | meIsPolice=${meIsPolice} | secrets finns=${!!room.secrets} | egen secret finns=${!!(room.secrets && room.secrets[myPlayerId])}`, "info", 6000);
+    }
+
     // Samla ALLA fältändringar för denna enda förflyttning i ett objekt.
     // Allt nedan skrivs sedan tillsammans med AP-avdraget i EN transaktion.
     const fieldUpdates = { x: nX, y: nY };
