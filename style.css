@@ -95,6 +95,24 @@ button:disabled { background: #222 !important; color: #555 !important; cursor: n
 .rules-content p { font-size: 12px; line-height: 1.5; color: #ccc; margin-bottom: 6px; }
 .rules-content strong { color: #fff; }
 
+/* --- Segerskärm --- */
+.victory-box {
+    background: #161616;
+    border: 2px solid #ecc94b;
+    border-radius: 10px;
+    padding: 24px 16px;
+    text-align: center;
+    animation: victory-in 0.4s ease;
+}
+@keyframes victory-in {
+    0% { opacity: 0; transform: scale(0.9); }
+    60% { opacity: 1; transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+.victory-trophy { font-size: 40px; margin-bottom: 8px; animation: token-bob 1.4s ease-in-out infinite; }
+.victory-box h2 { font-size: 16px; color: #fff; margin-bottom: 8px; letter-spacing: 0.5px; }
+.victory-box p { font-size: 12px; color: #ccc; line-height: 1.5; }
+
 /* MOBILANPASSAD FIXERAD KARTA */
 .map-viewport {
     width: 100%;
@@ -237,6 +255,16 @@ button:disabled { background: #222 !important; color: #555 !important; cursor: n
    förändringen syns även om man inte läser texten. */
 .hud-flash-up { background-color: #14532d !important; transform: scale(1.03); }
 .hud-flash-down { background-color: #4c0519 !important; transform: scale(1.03); }
+
+.hud-progress { margin-top: -2px; background: #161616; border: 1px solid #222; border-radius: 6px; padding: 6px 8px; }
+.progress-row { display: flex; align-items: center; gap: 6px; }
+.progress-row + .progress-row { margin-top: 4px; }
+.progress-label { flex: 0 0 auto; font-size: 9px; color: #999; white-space: nowrap; }
+.progress-track { flex: 1; height: 7px; background: #1f1f1f; border: 1px solid #333; border-radius: 4px; overflow: hidden; }
+.progress-fill { display: block; height: 100%; transition: width 0.4s ease; }
+.progress-fill-cash { background: linear-gradient(90deg, #16a34a, #22c55e); }
+.progress-fill-busts { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+.progress-value { flex: 0 0 auto; font-size: 9px; color: #ccc; font-variant-numeric: tabular-nums; }
 
 .pip-row { display: inline-flex; gap: 2px; vertical-align: middle; }
 .pip {

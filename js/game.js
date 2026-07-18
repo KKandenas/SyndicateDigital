@@ -3,12 +3,13 @@
 // avsluta en spelares tur), samt huvudlyssnaren som binder ihop alla
 // moduler. Detta är enda filen som känner till "hela bilden".
 
-import { paths, dbGet, dbUpdate, dbListen, dbTransactPlayer } from "./firebase.js";
+import { paths, dbGet, dbUpdate, dbListen, dbTransactPlayer, dbClaimOnce } from "./firebase.js";
 import { cityMapData, isStreetTile, isPortTile } from "./map.js";
 import { createRoom, joinRoom, assignRolesAndStart, isPolice } from "./players.js";
 import { movePlayer } from "./movement.js";
 import { directFightOrArrest, blindSearchTile, canFightHere, getValidCombatTargets } from "./combat.js";
 import { getBoozeFromPort, handleTurnStartIncome } from "./economy.js";
+import { GANG_WIN_CASH, POLICE_WIN_CASH, POLICE_WIN_BUSTS } from "./rules.js";
 import * as ui from "./ui.js";
 
 // --- Modul-state (enda källan till sanning för klientens session) ---
@@ -106,6 +107,45 @@ export async function handleStartGame() {
     }
 }
 
+// ---------- Vinstvillkor ----------
+
+/**
+ * Rent beräknad utifrån den delade rumsdatan — alla klienter som tar emot
+ * samma `data` kommer alltid fram till samma svar, så det spelar ingen roll
+ * VEM som råkar upptäcka det. Se rules.js för själva gränsvärdena.
+ */
+function computeWinner(data) {
+    for (const id in data.players) {
+        const p = data.players[id];
+        if (!isPolice(p) && p.bank >= GANG_WIN_CASH) {
+            return { playerId: id, name: p.name, role: "gang", reason: `${p.syndicate} säkrade $${GANG_WIN_CASH} i sin gömma.` };
+        }
+    }
+    const policeEntry = Object.entries(data.players).find(([, p]) => isPolice(p));
+    if (policeEntry) {
+        const [policeId, police] = policeEntry;
+        if (police.bank >= POLICE_WIN_CASH) {
+            return { playerId: policeId, name: police.name, role: "police", reason: `Polisen fyllde statskassan till $${POLICE_WIN_CASH}.` };
+        }
+        if ((data.policeBusts || 0) >= POLICE_WIN_BUSTS) {
+            return { playerId: policeId, name: police.name, role: "police", reason: `Polisen genomförde ${POLICE_WIN_BUSTS} lyckade razzior mot svartklubbar.` };
+        }
+    }
+    return null;
+}
+
+/**
+ * Körs av VARJE klient på varje rumsuppdatering. `dbClaimOnce` garanterar
+ * att bara den första skrivningen någonsin sätter vinnaren, så flera
+ * klienter som råkar upptäcka samma villkor samtidigt krockar inte.
+ */
+async function maybeClaimWinner(roomCode, data) {
+    if (data.winner) return;
+    const outcome = computeWinner(data);
+    if (!outcome) return;
+    await dbClaimOnce(paths.winner(roomCode), outcome);
+}
+
 // ---------- Huvudlyssnare ----------
 
 function startListening(roomCode) {
@@ -123,6 +163,11 @@ function startListening(roomCode) {
 }
 
 async function handlePlayingState(roomCode, data, mySeq) {
+    if (data.winner) {
+        ui.showVictoryScreen(data.winner, data.players);
+        return;
+    }
+
     // Kartan ritas alltid direkt och synkront med den senast mottagna datan,
     // så positionen på skärmen är aldrig fördröjd av något await nedanför.
     ui.showScreen("game-screen");
@@ -146,13 +191,19 @@ async function handlePlayingState(roomCode, data, mySeq) {
     }
     if (!isMyTurn) insideTurnStartTrigger = false;
 
-    ui.renderHud(me, mySecret);
+    ui.renderHud(me, mySecret, data.policeBusts || 0);
 
     const activeName = data.players[data.currentTurn] ? data.players[data.currentTurn].name : "Någon";
     ui.renderTurnIndicator(isMyTurn, me.ap, activeName);
     ui.toggleMovementControls(isMyTurn);
 
     ui.hideActionButtons();
+
+    // Görs av alla klienter, oavsett vems tur det är — vinstvillkoren kan
+    // uppfyllas av vilken spelares handling som helst.
+    await maybeClaimWinner(roomCode, data);
+    if (mySeq !== latestEventSeq) return;
+
     if (!isMyTurn) return;
 
     wireActionButtons(roomCode, data, me, meIsPolice);
@@ -235,6 +286,14 @@ function init() {
     document.getElementById("rules-btn-start").addEventListener("click", ui.openRules);
     document.getElementById("rules-btn-game").addEventListener("click", ui.openRules);
     document.getElementById("rules-close-btn").addEventListener("click", ui.closeRules);
+
+    document.getElementById("victory-home-btn").addEventListener("click", () => {
+        if (stopRoomListener) stopRoomListener();
+        stopRoomListener = null;
+        currentRoomCode = null;
+        myPlayerId = null;
+        ui.showScreen("start-screen");
+    });
 
     document.querySelectorAll(".dpad-btn[data-dx]").forEach((btn) => {
         btn.addEventListener("click", () => {

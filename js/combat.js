@@ -2,7 +2,7 @@
 // Ansvar: direkt konfrontation (slagsmål/arrestering) och razzior mot
 // dolda svartklubbar. Innehåller reglerna för VEM man får angripa och VAR.
 
-import { paths, dbGet, dbTransactPlayer, dbTransactSecret } from "./firebase.js";
+import { paths, dbGet, dbTransactPlayer, dbTransactSecret, dbIncrementCounter } from "./firebase.js";
 import { isPortTile } from "./map.js";
 import { pickRandomStreetTile } from "./map.js";
 import { isPolice } from "./players.js";
@@ -162,6 +162,12 @@ export async function blindSearchTile(roomCode, myPlayerId, tileX, tileY) {
             : `🪑 Stormade ${targetName}s klubb, stal $${lostClubCash} och förstörde ${lostStock} flaskor.`,
         meIsPolice ? "police" : "gang"
     );
+
+    // Räknas mot polisens alternativa vinstvillkor (rules.js) — en fast
+    // totalsumma lyckade razzior, inte "en per aktivt gäng".
+    if (meIsPolice) {
+        await dbIncrementCounter(paths.policeBusts(roomCode), 1);
+    }
 
     if (lostClubCash > 0) {
         await dbTransactPlayer(roomCode, myPlayerId, (current) => ({

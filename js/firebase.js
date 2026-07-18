@@ -30,6 +30,8 @@ export const paths = {
     secret: (code, playerId) => `rooms/${code}/secrets/${playerId}`,
     currentTurn: (code) => `rooms/${code}/currentTurn`,
     status: (code) => `rooms/${code}/status`,
+    policeBusts: (code) => `rooms/${code}/policeBusts`,
+    winner: (code) => `rooms/${code}/winner`,
 };
 
 // --- Generiska wrappers ---
@@ -70,6 +72,23 @@ export async function dbTransactSecret(roomCode, playerId, updateFn) {
         if (current === null) return current;
         return updateFn(current);
     });
+    return result.snapshot.val();
+}
+
+// Räknar upp ett värde på en given sökväg, transaktionssäkert (t.ex. antal
+// lyckade razzior polisen genomfört totalt).
+export async function dbIncrementCounter(path, delta = 1) {
+    const counterRef = ref(db, path);
+    const result = await runTransaction(counterRef, (current) => (current || 0) + delta);
+    return result.snapshot.val();
+}
+
+// Sätter ett värde EN gång — om något redan står där lämnas det orört.
+// Används för att avgöra vinnaren utan att flera klienter som upptäcker
+// samma vinstvillkor samtidigt skriver över varandra.
+export async function dbClaimOnce(path, value) {
+    const claimRef = ref(db, path);
+    const result = await runTransaction(claimRef, (current) => (current !== null ? current : value));
     return result.snapshot.val();
 }
 

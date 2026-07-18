@@ -4,6 +4,7 @@
 
 import { cityMapData } from "./map.js";
 import { isPolice } from "./players.js";
+import { GANG_WIN_CASH, POLICE_WIN_CASH, POLICE_WIN_BUSTS } from "./rules.js";
 
 const MAX_BOOZE = 3;
 const MAX_AP = 3;
@@ -224,7 +225,17 @@ function renderPips(current, max, variantClass) {
     return out;
 }
 
-export function renderHud(me, mySecret) {
+function renderProgressRow(label, current, max, variantClass) {
+    const clamped = Math.max(0, Math.min(current, max));
+    const pct = Math.round((clamped / max) * 100);
+    return `<div class="progress-row">
+        <span class="progress-label">${label}</span>
+        <span class="progress-track"><span class="progress-fill ${variantClass}" style="width:${pct}%"></span></span>
+        <span class="progress-value">${clamped}/${max}</span>
+    </div>`;
+}
+
+export function renderHud(me, mySecret, policeBusts = 0) {
     const meIsPolice = isPolice(me);
     const info = syndicateInfo(me);
 
@@ -258,6 +269,14 @@ export function renderHud(me, mySecret) {
     }
     flashChange(bankHud, me.bank, lastBank);
     lastBank = me.bank;
+
+    const progressEl = document.getElementById("hud-progress");
+    if (progressEl) {
+        progressEl.innerHTML = meIsPolice
+            ? renderProgressRow("💵 Kassa", me.bank, POLICE_WIN_CASH, "progress-fill-cash") +
+              renderProgressRow("🔍 Klubbar", policeBusts, POLICE_WIN_BUSTS, "progress-fill-busts")
+            : renderProgressRow("🎯 Mål", me.bank, GANG_WIN_CASH, "progress-fill-cash");
+    }
 }
 
 let wasMyTurn = false;
@@ -275,6 +294,24 @@ export function renderTurnIndicator(isMyTurn, apLeft, activeName) {
         el.className = "turn-indicator";
     }
     wasMyTurn = isMyTurn;
+}
+
+// --- Segerskärm ---
+export function showVictoryScreen(winner, players) {
+    const p = players ? players[winner.playerId] : null;
+    const info = p ? syndicateInfo(p) : POLICE_INFO;
+
+    const label = winner.role === "police"
+        ? `🚨 Polisen (${escapeHtml(winner.name)})`
+        : `${info.symbol} ${escapeHtml(winner.name)}`;
+
+    document.getElementById("victory-title").innerText = `${label} vann!`;
+    document.getElementById("victory-reason").innerText = winner.reason || "";
+
+    const box = document.getElementById("victory-box");
+    if (box) box.style.borderColor = info.color;
+
+    showScreen("victory-screen");
 }
 
 export function toggleMovementControls(enable) {

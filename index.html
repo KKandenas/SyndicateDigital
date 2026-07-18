@@ -26,7 +26,7 @@
 
                 <h3>🎯 Målet med spelet</h3>
                 <p>Ett <strong>gäng</strong> vinner genom att vara först med att säkra <strong>$3000</strong> i sin gömma (håll koll på "🏦 Säkrat" i din HUD).</p>
-                <p><strong>Polisen</strong> vinner genom att antingen redovisa <strong>$2000</strong> till statskassan, eller hitta och plundra varenda gängs svartklubb — beroende på vad som händer först.</p>
+                <p><strong>Polisen</strong> vinner genom att antingen redovisa <strong>$2000</strong> till statskassan, eller genomföra <strong>4 lyckade razzior</strong> mot svartklubbar totalt (samma klubb räknas flera gånger om den hittas igen efter att ha flyttat) — beroende på vad som händer först. Målet är alltid 4, oavsett hur många gäng som spelar, så det inte blir för lätt i en duell mot bara ett gäng.</p>
 
                 <h3>👥 Roller</h3>
                 <p>En slumpad spelare blir 🚨 polis. Resten fördelas på upp till fyra syndikat: ♠ Nightspades, ♥ Crimson Hearts, ♣ Iron Clovers, ♦ Diamond Syndicate. Varje gängmedlem får en hemlig svartklubb (lager) och en hemlig gömma (bankfack) — synliga bara för dig själv.</p>
@@ -88,6 +88,7 @@
             <div class="hud-grid" style="margin-top: -6px;">
                 <div class="hud-item hud-cash" id="hud-bank" style="grid-column: span 3; background: #132316; font-weight: bold; font-size: 9px;">🏦 Bank / Klubb-info...</div>
             </div>
+            <div class="hud-progress" id="hud-progress"></div>
 
             <div class="map-viewport">
                 <div class="map-container" id="map-board"></div>
@@ -105,6 +106,16 @@
                     <button id="secondary-action-btn" class="btn-action" style="display:none;">Aktion 2</button>
                 </div>
             </div>
+        </div>
+
+        <!-- SEGERSKÄRM -->
+        <div class="screen" id="victory-screen">
+            <div class="victory-box" id="victory-box">
+                <div class="victory-trophy">🏆</div>
+                <h2 id="victory-title">Spelet är slut!</h2>
+                <p id="victory-reason"></p>
+            </div>
+            <button id="victory-home-btn" class="btn-success">Till startsidan</button>
         </div>
 
     </div>
