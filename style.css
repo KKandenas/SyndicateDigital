@@ -50,6 +50,16 @@ h1 { font-size: 20px; letter-spacing: 4px; margin-bottom: 2px; color: #fff; font
     padding: 10px 12px;
 }
 
+#start-screen {
+    border-radius: 10px;
+    overflow: hidden;
+    background:
+        linear-gradient(180deg, rgba(8,8,10,0.05) 0%, rgba(8,8,10,0.15) 50%, rgba(6,6,8,0.55) 100%),
+        url("assets/start-bg.jpg") center/cover;
+    padding: 16px 12px 14px;
+    border: 1px solid #222;
+}
+
 .screen { display: none; }
 .screen.active {
     display: flex;
