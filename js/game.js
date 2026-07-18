@@ -126,7 +126,7 @@ async function handlePlayingState(roomCode, data, mySeq) {
     // Kartan ritas alltid direkt och synkront med den senast mottagna datan,
     // så positionen på skärmen är aldrig fördröjd av något await nedanför.
     ui.showScreen("game-screen");
-    ui.renderCityMap(data.players, data.secrets, myPlayerId);
+    ui.renderCityMap(data.players, data.secrets, data.currentTurn, myPlayerId);
 
     const me = data.players[myPlayerId];
     if (!me) return;
