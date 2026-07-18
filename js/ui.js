@@ -30,6 +30,9 @@ function syndicateInfo(p) {
 export function showScreen(screenId) {
     document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
     document.getElementById(screenId).classList.add("active");
+
+    const leaderboard = document.getElementById("leaderboard");
+    if (leaderboard) leaderboard.style.display = screenId === "game-screen" ? "flex" : "none";
 }
 
 // Regler kan öppnas från startskärmen ELLER mitt i ett pågående spel, så vi
@@ -273,7 +276,7 @@ export function renderHud(me, mySecret, policeBusts = 0) {
     const progressEl = document.getElementById("hud-progress");
     if (progressEl) {
         progressEl.innerHTML = meIsPolice
-            ? renderProgressRow("💵 Kassa", me.bank, POLICE_WIN_CASH, "progress-fill-cash") +
+            ? renderProgressRow("🏦 Statskassa", me.bank, POLICE_WIN_CASH, "progress-fill-cash") +
               renderProgressRow("🔍 Klubbar", policeBusts, POLICE_WIN_BUSTS, "progress-fill-busts")
             : renderProgressRow("🎯 Mål", me.bank, GANG_WIN_CASH, "progress-fill-cash");
     }
@@ -294,6 +297,44 @@ export function renderTurnIndicator(isMyTurn, apLeft, activeName) {
         el.className = "turn-indicator";
     }
     wasMyTurn = isMyTurn;
+}
+
+// --- Leaderboard ---
+// Alla spelare rankas på samma skala genom att räkna om vars och ens
+// framsteg till en procentsats av DERAS EGET vinstvillkor (rules.js) —
+// annars går det inte att jämföra t.ex. gängets bankade cash direkt mot
+// polisens två separata mål (kassa ELLER razzior).
+export function toggleLeaderboard() {
+    const panel = document.getElementById("leaderboard-panel");
+    if (panel) panel.classList.toggle("open");
+}
+
+function computeStandings(players, policeBusts) {
+    return Object.entries(players || {}).map(([id, p]) => {
+        const info = syndicateInfo(p);
+        if (isPolice(p)) {
+            const cashPct = Math.min(100, ((p.bank || 0) / POLICE_WIN_CASH) * 100);
+            const bustPct = Math.min(100, ((policeBusts || 0) / POLICE_WIN_BUSTS) * 100);
+            return { id, name: p.name, info, pct: Math.max(cashPct, bustPct) };
+        }
+        return { id, name: p.name, info, pct: Math.min(100, ((p.bank || 0) / GANG_WIN_CASH) * 100) };
+    }).sort((a, b) => b.pct - a.pct);
+}
+
+export function renderLeaderboard(players, policeBusts, myPlayerId) {
+    const panel = document.getElementById("leaderboard-panel");
+    if (!panel) return;
+
+    const standings = computeStandings(players, policeBusts);
+    const rows = standings.map((s, i) => `
+        <div class="leaderboard-row${s.id === myPlayerId ? " leaderboard-me" : ""}">
+            <span class="leaderboard-rank">${i + 1}.</span>
+            <span>${s.info.symbol}</span>
+            <span class="leaderboard-name">${escapeHtml(s.name)}</span>
+            <span class="leaderboard-value">${Math.round(s.pct)}%</span>
+        </div>`).join("");
+
+    panel.innerHTML = `<div class="leaderboard-title">🏆 Ställning</div>${rows}`;
 }
 
 // --- Segerskärm ---

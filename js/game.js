@@ -192,6 +192,7 @@ async function handlePlayingState(roomCode, data, mySeq) {
     if (!isMyTurn) insideTurnStartTrigger = false;
 
     ui.renderHud(me, mySecret, data.policeBusts || 0);
+    ui.renderLeaderboard(data.players, data.policeBusts || 0, myPlayerId);
 
     const activeName = data.players[data.currentTurn] ? data.players[data.currentTurn].name : "Någon";
     ui.renderTurnIndicator(isMyTurn, me.ap, activeName);
@@ -286,6 +287,8 @@ function init() {
     document.getElementById("rules-btn-start").addEventListener("click", ui.openRules);
     document.getElementById("rules-btn-game").addEventListener("click", ui.openRules);
     document.getElementById("rules-close-btn").addEventListener("click", ui.closeRules);
+
+    document.getElementById("leaderboard-toggle").addEventListener("click", ui.toggleLeaderboard);
 
     document.getElementById("victory-home-btn").addEventListener("click", () => {
         if (stopRoomListener) stopRoomListener();

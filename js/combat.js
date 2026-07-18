@@ -78,7 +78,7 @@ export async function directFightOrArrest(roomCode, myPlayerId, tileX, tileY) {
         if (meIsPolice) {
             stolenCashTotal += r.fine;
             confiscatedBooze += r.seizedBooze;
-            reportLines.push(`👮 Haffade ${r.name}! Beslag: ${r.seizedBooze} sprit, $${r.fine} i böter.`);
+            reportLines.push(`👮 Haffade ${r.name}! Beslag: ${r.seizedBooze} sprit, $${r.fine} i böter (i fickan — redovisa på stationen).`);
         } else {
             stolenCashTotal += r.stolen;
             reportLines.push(`👊 Spöade ${r.name} och rånade $${r.stolen}!`);
