@@ -201,11 +201,13 @@ function styleToken(el, p, id, currentTurnId, myPlayerId) {
     el.className = `player-token ${info.tokenClass}`;
     el.classList.toggle("token-me", id === myPlayerId);
     el.classList.toggle("token-active-turn", id === currentTurnId);
+    el.classList.toggle("token-disconnected", p.connected === false);
 
+    const statusSuffix = p.connected === false ? " — frånkopplad 🔌" : "";
     el.innerHTML = `<span class="token-symbol">${info.symbol}</span>`;
     el.title = p.name;
-    el.setAttribute("aria-label", `${p.name} (${isPolice(p) ? "Polis" : p.syndicate})`);
-    el.onclick = () => toast(`${info.symbol} ${p.name} — ${isPolice(p) ? "Polis" : p.syndicate}`, isPolice(p) ? "police" : "gang", 2200);
+    el.setAttribute("aria-label", `${p.name} (${isPolice(p) ? "Polis" : p.syndicate})${statusSuffix}`);
+    el.onclick = () => toast(`${info.symbol} ${p.name} — ${isPolice(p) ? "Polis" : p.syndicate}${statusSuffix}`, isPolice(p) ? "police" : "gang", 2200);
 }
 
 // --- HUD ---

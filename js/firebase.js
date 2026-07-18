@@ -92,4 +92,14 @@ export async function dbClaimOnce(path, value) {
     return result.snapshot.val();
 }
 
+// Registrerar att spelarens `connected`-fält automatiskt sätts till false av
+// FIREBASE-SERVERN om anslutningen bryts — stängd flik, förlorad uppkoppling,
+// eller appen bakgrundad på iOS tills webbläsaren avslutar sidan. Fungerar
+// även om klientens egen JS aldrig hinner köra någon "lämna rum"-logik,
+// vilket är precis den situationen turordningen annars låste sig på.
+export function registerPresence(roomCode, playerId) {
+    const playerRef = ref(db, paths.player(roomCode, playerId));
+    onDisconnect(playerRef).update({ connected: false });
+}
+
 export { onDisconnect, ref };

@@ -3,7 +3,7 @@
 // avsluta en spelares tur), samt huvudlyssnaren som binder ihop alla
 // moduler. Detta är enda filen som känner till "hela bilden".
 
-import { paths, dbGet, dbUpdate, dbListen, dbTransactPlayer, dbClaimOnce } from "./firebase.js";
+import { paths, dbGet, dbUpdate, dbUpdateAt, dbListen, dbTransactPlayer, dbClaimOnce, registerPresence } from "./firebase.js";
 import { cityMapData, isOpenTile, isPortTile } from "./map.js";
 import { createRoom, joinRoom, assignRolesAndStart, isPolice } from "./players.js";
 import { movePlayer } from "./movement.js";
@@ -55,13 +55,29 @@ async function passTurnToNext(roomCode, currentPlayerId) {
     if (!players) return;
     const ids = Object.keys(players);
     if (ids.length === 0) return;
-    const idx = ids.indexOf(currentPlayerId);
-    const nextId = ids[(idx + 1) % ids.length];
+
+    const nextId = findNextConnectedPlayer(players, ids, currentPlayerId);
+    if (!nextId) return; // ingen ansluten spelare kvar — inget att lämna över till
 
     await dbUpdate({
         [paths.currentTurn(roomCode)]: nextId,
         [`${paths.player(roomCode, nextId)}/ap`]: 3,
     });
+}
+
+/**
+ * Hoppar över spelare markerade `connected: false` (se registerPresence i
+ * firebase.js) i turordningen, så att spelet inte låser sig för alltid bara
+ * för att någon stänger fliken eller tappar täckning mitt i sin tur.
+ * `undefined` räknas som anslutet, för gamla spelarposter utan fältet.
+ */
+function findNextConnectedPlayer(players, ids, fromId) {
+    const startIdx = ids.indexOf(fromId);
+    for (let step = 1; step <= ids.length; step++) {
+        const candidateId = ids[(startIdx + step) % ids.length];
+        if (players[candidateId].connected !== false) return candidateId;
+    }
+    return null;
 }
 
 // ---------- Rumsflöde ----------
@@ -146,6 +162,35 @@ async function maybeClaimWinner(roomCode, data) {
     await dbClaimOnce(paths.winner(roomCode), outcome);
 }
 
+// ---------- Frånkopplade spelare ----------
+
+// Håller reda på vilken currentTurn vi senast försökte hoppa förbi, så att
+// vi inte upprepar samma toast/skrivning på varje enskild rumsuppdatering
+// medan vi väntar på att skrivningen ovan hinner slå igenom.
+let handledDisconnectFor = null;
+
+/**
+ * Körs av VARJE ansluten klient på varje rumsuppdatering: om spelaren vars
+ * tur det är just nu har markerats frånkopplad (onDisconnect i firebase.js),
+ * kan de förstås aldrig själva trycka på något — så vilken annan ansluten
+ * klient som helst tar över och lämnar turen vidare åt dem.
+ */
+async function maybeSkipDisconnectedTurn(roomCode, data) {
+    const currentId = data.currentTurn;
+    const current = data.players[currentId];
+    const stuck = !current || current.connected === false;
+
+    if (!stuck) {
+        handledDisconnectFor = null;
+        return;
+    }
+    if (handledDisconnectFor === currentId) return;
+    handledDisconnectFor = currentId;
+
+    ui.toast(`🔌 ${current ? current.name : "Spelaren"} verkar ha lämnat — turen går vidare.`, "warning");
+    await passTurnToNext(roomCode, currentId);
+}
+
 // ---------- Huvudlyssnare ----------
 
 function startListening(roomCode) {
@@ -153,7 +198,12 @@ function startListening(roomCode) {
     stopRoomListener = dbListen(paths.room(roomCode), (data) => {
         if (!data) return;
 
-        if (data.players) ui.renderPlayerList(data.players);
+        if (data.players) {
+            const connectedPlayers = Object.fromEntries(
+                Object.entries(data.players).filter(([, p]) => p.connected !== false)
+            );
+            ui.renderPlayerList(connectedPlayers);
+        }
 
         if (data.status === "playing") {
             const mySeq = ++latestEventSeq;
@@ -175,6 +225,15 @@ async function handlePlayingState(roomCode, data, mySeq) {
 
     const me = data.players[myPlayerId];
     if (!me) return;
+
+    // Självläkning: om vi tidigare blivit markerade frånkopplade (t.ex. en
+    // kort nätverksblip eller att fliken bakgrundades en stund på iOS) men
+    // uppenbarligen tar emot uppdateringar igen, städa upp efter oss själva
+    // och registrera presence-hooken på nytt för nästa gång.
+    if (me.connected === false) {
+        dbUpdateAt(paths.player(roomCode, myPlayerId), { connected: true });
+        registerPresence(roomCode, myPlayerId);
+    }
 
     const isMyTurn = data.currentTurn === myPlayerId;
     const meIsPolice = isPolice(me);
@@ -200,8 +259,11 @@ async function handlePlayingState(roomCode, data, mySeq) {
 
     ui.hideActionButtons();
 
-    // Görs av alla klienter, oavsett vems tur det är — vinstvillkoren kan
-    // uppfyllas av vilken spelares handling som helst.
+    // Görs av alla anslutna klienter, oavsett vems tur det är.
+    await maybeSkipDisconnectedTurn(roomCode, data);
+    if (mySeq !== latestEventSeq) return;
+
+    // Vinstvillkoren kan uppfyllas av vilken spelares handling som helst.
     await maybeClaimWinner(roomCode, data);
     if (mySeq !== latestEventSeq) return;
 

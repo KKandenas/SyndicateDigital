@@ -2,7 +2,7 @@
 // Ansvar: allt som rör att skapa rum, gå med i rum, och tilldela
 // syndikat/polis-roll när spelet startar. Inga UI-DOM-anrop här.
 
-import { dbSet, dbGet, dbUpdate, paths } from "./firebase.js";
+import { dbSet, dbGet, dbUpdate, paths, registerPresence } from "./firebase.js";
 import { generateSecretsForPlayers } from "./map.js";
 
 export const ROLE = {
@@ -41,6 +41,7 @@ function newPlayerRecord(name, isLeader) {
         booze: 0, cash: 0, bank: 0,
         ap: 3,
         isLeader,
+        connected: true,
     };
 }
 
@@ -55,6 +56,7 @@ export async function createRoom(hostName) {
         createdAt: Date.now(),
     });
     await dbSet(paths.player(code, playerId), newPlayerRecord(hostName.trim() || "Boss", true));
+    registerPresence(code, playerId);
 
     return { roomCode: code, playerId, isLeader: true };
 }
@@ -66,6 +68,7 @@ export async function joinRoom(roomCode, playerName) {
 
     const playerId = makePlayerId();
     await dbSet(paths.player(code, playerId), newPlayerRecord(playerName.trim(), false));
+    registerPresence(code, playerId);
 
     return { roomCode: code, playerId, isLeader: false };
 }
@@ -79,7 +82,12 @@ export async function assignRolesAndStart(roomCode) {
     const players = await dbGet(paths.players(roomCode));
     if (!players) throw new Error("Inga spelare hittades.");
 
-    const playerIds = Object.keys(players);
+    // Bara spelare som fortfarande är kvar i lobbyn ska få en roll — annars
+    // slösas en gäng-plats bort på en "spökspelare" som redan lämnat innan
+    // spelet ens började.
+    const playerIds = Object.keys(players).filter((id) => players[id].connected !== false);
+    if (playerIds.length === 0) throw new Error("Alla spelare har lämnat rummet.");
+
     const policeId = playerIds[Math.floor(Math.random() * playerIds.length)];
     const gangPool = [...GANG_POOL];
 
