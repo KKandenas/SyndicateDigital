@@ -38,6 +38,18 @@ body {
 h1 { font-size: 20px; letter-spacing: 4px; margin-bottom: 2px; color: #fff; font-weight: 900; }
 .subtitle { font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 12px; }
 
+.intro-text {
+    font-size: 12px;
+    line-height: 1.55;
+    color: #bbb;
+    text-align: left;
+    background: #161616;
+    border: 1px solid #222;
+    border-left: 3px solid #ecc94b;
+    border-radius: 6px;
+    padding: 10px 12px;
+}
+
 .screen { display: none; }
 .screen.active {
     display: flex;
