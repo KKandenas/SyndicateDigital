@@ -50,8 +50,11 @@ export function tileAt(x, y) {
     return cityMapData.find((t) => t.x === x && t.y === y) || null;
 }
 
-export function isStreetTile(tile) {
-    return !!tile && tile.type.includes("street");
+// "Öppen" ruta = allt utom Hamnen och Polishuset, som har egna särregler.
+// Hörnen (start-HQ) räknas hit precis som vanliga gator: de är bara
+// startpositioner, inte funktionellt speciella.
+export function isOpenTile(tile) {
+    return !!tile && tile.type !== TILE.PORT && tile.type !== TILE.POLICE;
 }
 
 export function isPortTile(x, y) {
@@ -62,17 +65,11 @@ export function isPoliceTile(x, y) {
     return x === POLICE_COORD.x && y === POLICE_COORD.y;
 }
 
-// REGEL: Svartklubbar och gömmor får aldrig ligga på hamnen eller polishuset,
-// och aldrig dela ruta med en annan hemlig zon (varken egen eller annan spelares).
-const FORBIDDEN_SECRET_TILES = [PORT_COORD, POLICE_COORD];
-
-function isForbiddenForSecret(x, y) {
-    return FORBIDDEN_SECRET_TILES.some((c) => c.x === x && c.y === y);
-}
-
-const validStreetTiles = cityMapData.filter(
-    (t) => isStreetTile(t) && !isForbiddenForSecret(t.x, t.y)
-);
+// REGEL: Svartklubbar och gömmor får aldrig ligga på hamnen eller polishuset
+// (se isOpenTile), och aldrig dela ruta med en annan hemlig zon (varken
+// egen eller annan spelares) — det senare garanteras av att varje ruta
+// bara delas ut en gång ur poolen nedan.
+const validOpenTiles = cityMapData.filter(isOpenTile);
 
 /**
  * Slumpar fram klubb- och gömma-koordinater för ALLA icke-polis-spelare
@@ -81,7 +78,7 @@ const validStreetTiles = cityMapData.filter(
  * hemligheter kunde krocka på samma ruta.
  */
 export function generateSecretsForPlayers(nonPolicePlayerIds) {
-    const pool = [...validStreetTiles];
+    const pool = [...validOpenTiles];
     shuffle(pool);
 
     if (pool.length < nonPolicePlayerIds.length * 2) {
@@ -102,12 +99,12 @@ export function generateSecretsForPlayers(nonPolicePlayerIds) {
     return secrets;
 }
 
-/** Slumpar EN ny giltig gata, exkluderar valfria upptagna rutor (t.ex. vid razzia-omflytt). */
-export function pickRandomStreetTile(excludeCoords = []) {
-    const candidates = validStreetTiles.filter(
+/** Slumpar EN ny giltig ruta, exkluderar valfria upptagna rutor (t.ex. vid razzia-omflytt). */
+export function pickRandomOpenTile(excludeCoords = []) {
+    const candidates = validOpenTiles.filter(
         (t) => !excludeCoords.some((c) => c.x === t.x && c.y === t.y)
     );
-    const pool = candidates.length > 0 ? candidates : validStreetTiles;
+    const pool = candidates.length > 0 ? candidates : validOpenTiles;
     return pool[Math.floor(Math.random() * pool.length)];
 }
 

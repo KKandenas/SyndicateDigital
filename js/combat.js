@@ -4,7 +4,7 @@
 
 import { paths, dbGet, dbTransactPlayer, dbTransactSecret, dbIncrementCounter } from "./firebase.js";
 import { isPortTile } from "./map.js";
-import { pickRandomStreetTile } from "./map.js";
+import { pickRandomOpenTile } from "./map.js";
 import { isPolice } from "./players.js";
 import { consumeActionPoint } from "./game.js";
 import { toast } from "./ui.js";
@@ -145,7 +145,7 @@ export async function blindSearchTile(roomCode, myPlayerId, tileX, tileY) {
         }
         lostStock = current.club.stock || 0;
         lostClubCash = current.club.clubCash || 0;
-        const newClub = pickRandomStreetTile(occupied);
+        const newClub = pickRandomOpenTile(occupied);
         return { ...current, club: { x: newClub.x, y: newClub.y, stock: 0, clubCash: 0 } };
     });
 

@@ -4,7 +4,7 @@
 // moduler. Detta är enda filen som känner till "hela bilden".
 
 import { paths, dbGet, dbUpdate, dbListen, dbTransactPlayer, dbClaimOnce } from "./firebase.js";
-import { cityMapData, isStreetTile, isPortTile } from "./map.js";
+import { cityMapData, isOpenTile, isPortTile } from "./map.js";
 import { createRoom, joinRoom, assignRolesAndStart, isPolice } from "./players.js";
 import { movePlayer } from "./movement.js";
 import { directFightOrArrest, blindSearchTile, canFightHere, getValidCombatTargets } from "./combat.js";
@@ -235,9 +235,10 @@ function wireActionButtons(roomCode, data, me, meIsPolice) {
         });
     }
 
-    // Sekundär knapp: sök lönnkrog / razzia på gaturutor.
+    // Sekundär knapp: sök lönnkrog / razzia — går på alla öppna rutor,
+    // inklusive hörnen (se isOpenTile i map.js).
     const tile = cityMapData.find((t) => t.x === me.x && t.y === me.y);
-    if (isStreetTile(tile)) {
+    if (isOpenTile(tile)) {
         ui.setActionButton(2, {
             visible: true,
             className: meIsPolice ? "btn-police" : "btn-gang",
