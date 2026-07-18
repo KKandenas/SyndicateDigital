@@ -2,7 +2,7 @@
 // Ansvar: direkt konfrontation (slagsmål/arrestering) och razzior mot
 // dolda svartklubbar. Innehåller reglerna för VEM man får angripa och VAR.
 
-import { paths, dbGet, dbUpdate } from "./firebase.js";
+import { paths, dbGet, dbTransactPlayer, dbTransactSecret } from "./firebase.js";
 import { isPortTile } from "./map.js";
 import { pickRandomStreetTile } from "./map.js";
 import { isPolice } from "./players.js";
@@ -45,43 +45,60 @@ export async function directFightOrArrest(roomCode, myPlayerId, tileX, tileY) {
         return;
     }
 
-    const updates = {};
+    // Varje måls cash/booze uppdateras i en EGEN spelar-transaktion, härledd
+    // ur den FÄRSKA nod-datan vid skrivtillfället — inte ur ett belopp som
+    // räknats ut i förväg från ögonblicksbilden ovan. Det förhindrar att två
+    // nästan samtidiga angrepp mot samma mål skriver över varandra och
+    // duplicerar (eller raderar) pengar/sprit.
+    const results = await Promise.all(validTargets.map(async ([targetId, target]) => {
+        let fine = 0;
+        let seizedBooze = 0;
+        let stolen = 0;
+
+        await dbTransactPlayer(roomCode, targetId, (current) => {
+            if (meIsPolice) {
+                seizedBooze = current.booze || 0;
+                fine = Math.floor((current.cash || 0) / 2);
+                return { ...current, cash: current.cash - fine, booze: 0 };
+            }
+            stolen = Math.floor((current.cash || 0) / 2);
+            return { ...current, cash: current.cash - stolen };
+        });
+
+        return meIsPolice
+            ? { name: target.name, fine, seizedBooze }
+            : { name: target.name, stolen };
+    }));
+
     let stolenCashTotal = 0;
     let confiscatedBooze = 0;
     const reportLines = [];
 
-    for (const [targetId, target] of validTargets) {
+    for (const r of results) {
         if (meIsPolice) {
-            if (target.booze > 0) {
-                confiscatedBooze += target.booze;
-                updates[`${paths.player(roomCode, targetId)}/booze`] = 0;
-            }
-            const fine = Math.floor(target.cash / 2);
-            if (fine > 0) {
-                stolenCashTotal += fine;
-                updates[`${paths.player(roomCode, targetId)}/cash`] = target.cash - fine;
-            }
-            reportLines.push(`👮 Haffade ${target.name}! Beslag: ${target.booze} sprit, $${fine} i böter.`);
+            stolenCashTotal += r.fine;
+            confiscatedBooze += r.seizedBooze;
+            reportLines.push(`👮 Haffade ${r.name}! Beslag: ${r.seizedBooze} sprit, $${r.fine} i böter.`);
         } else {
-            const stolen = Math.floor(target.cash / 2);
-            if (stolen > 0) {
-                stolenCashTotal += stolen;
-                updates[`${paths.player(roomCode, targetId)}/cash`] = target.cash - stolen;
-            }
-            reportLines.push(`👊 Spöade ${target.name} och rånade $${stolen}!`);
+            stolenCashTotal += r.stolen;
+            reportLines.push(`👊 Spöade ${r.name} och rånade $${r.stolen}!`);
         }
-    }
-
-    if (Object.keys(updates).length > 0) {
-        await dbUpdate(updates);
     }
 
     toast(reportLines.join(" "), meIsPolice ? "police" : "gang");
 
-    await consumeActionPoint(roomCode, myPlayerId, {
-        cash: me.cash + stolenCashTotal,
-        booze: me.booze + confiscatedBooze,
-    });
+    // Egen vinst (byte/beslag) läggs till som en delta på den FÄRSKA
+    // spelar-noden, inte som ett belopp uträknat från `me` ovan — annars
+    // kunde t.ex. ett dubbeltryck på knappen tappa bort den ena vinsten.
+    if (stolenCashTotal > 0 || confiscatedBooze > 0) {
+        await dbTransactPlayer(roomCode, myPlayerId, (current) => ({
+            ...current,
+            cash: (current.cash || 0) + stolenCashTotal,
+            booze: (current.booze || 0) + confiscatedBooze,
+        }));
+    }
+
+    await consumeActionPoint(roomCode, myPlayerId, {});
 }
 
 export async function blindSearchTile(roomCode, myPlayerId, tileX, tileY) {
@@ -91,53 +108,67 @@ export async function blindSearchTile(roomCode, myPlayerId, tileX, tileY) {
     const secrets = room.secrets || {};
     const meIsPolice = isPolice(me);
 
-    const updates = {};
-    let cashGain = 0;
-    const reportLines = [];
-    let foundAny = false;
+    // REGEL (map.js): klubbar/gömmor delar aldrig ruta, så högst en klubb
+    // kan matcha den sökta rutan.
+    const targetId = Object.keys(secrets).find(
+        (id) => id !== myPlayerId && secrets[id].club &&
+            secrets[id].club.x === tileX && secrets[id].club.y === tileY
+    );
 
-    // Undvik att flytta en avslöjad klubb till en ruta som redan är upptagen
-    // av en annan hemlig zon (samma regel som vid spelstart).
+    if (!targetId) {
+        toast(meIsPolice ? "Razzian gav inget här." : "Tom gränd. Inga klubbar här.", "info");
+        await consumeActionPoint(roomCode, myPlayerId, {});
+        return;
+    }
+
+    // Kollisionsfri-lista för den nya klubbplatsen (samma princip som vid
+    // spelstart i map.js).
     const occupied = [];
     for (const pid in secrets) {
         if (secrets[pid].club) occupied.push(secrets[pid].club);
         if (secrets[pid].stash) occupied.push(secrets[pid].stash);
     }
 
-    for (const targetId in secrets) {
-        if (targetId === myPlayerId) continue;
-        const targetSecret = secrets[targetId];
-        if (targetSecret.club && targetSecret.club.x === tileX && targetSecret.club.y === tileY) {
-            foundAny = true;
-            const lostStock = targetSecret.club.stock || 0;
-            const lostClubCash = targetSecret.club.clubCash || 0;
-            cashGain += lostClubCash;
+    let lostStock = 0;
+    let lostClubCash = 0;
+    let alreadyGone = false;
 
-            const targetName = players[targetId] ? players[targetId].name : "okänd";
-            reportLines.push(
-                meIsPolice
-                    ? `🚨 Razzia mot ${targetName}s klubb! Beslag $${lostClubCash}, hällde ut ${lostStock} flaskor.`
-                    : `🪑 Stormade ${targetName}s klubb, stal $${lostClubCash} och förstörde ${lostStock} flaskor.`
-            );
-
-            const newClub = pickRandomStreetTile(occupied);
-            updates[`${paths.secret(roomCode, targetId)}/club`] = {
-                x: newClub.x, y: newClub.y, stock: 0, clubCash: 0,
-            };
-            occupied.push(newClub);
+    // Transaktionssäkert mot klubbens FÄRSKA nod-data: om två spelare råkar
+    // hitta och plundra samma klubb i exakt samma ögonblick ska bara den
+    // första få loot och flytta klubben — den andra möter en redan tömd/
+    // förflyttad klubb istället för att skriva över den första vinnarens
+    // beslag med sin egen, stale-beräknade "tömning".
+    await dbTransactSecret(roomCode, targetId, (current) => {
+        if (!current || !current.club || current.club.x !== tileX || current.club.y !== tileY) {
+            alreadyGone = true;
+            return current;
         }
-    }
+        lostStock = current.club.stock || 0;
+        lostClubCash = current.club.clubCash || 0;
+        const newClub = pickRandomStreetTile(occupied);
+        return { ...current, club: { x: newClub.x, y: newClub.y, stock: 0, clubCash: 0 } };
+    });
 
-    if (!foundAny) {
+    if (alreadyGone) {
         toast(meIsPolice ? "Razzian gav inget här." : "Tom gränd. Inga klubbar här.", "info");
         await consumeActionPoint(roomCode, myPlayerId, {});
         return;
     }
 
-    if (Object.keys(updates).length > 0) {
-        await dbUpdate(updates);
-    }
-    toast(reportLines.join(" "), meIsPolice ? "police" : "gang");
+    const targetName = players[targetId] ? players[targetId].name : "okänd";
+    toast(
+        meIsPolice
+            ? `🚨 Razzia mot ${targetName}s klubb! Beslag $${lostClubCash}, hällde ut ${lostStock} flaskor.`
+            : `🪑 Stormade ${targetName}s klubb, stal $${lostClubCash} och förstörde ${lostStock} flaskor.`,
+        meIsPolice ? "police" : "gang"
+    );
 
-    await consumeActionPoint(roomCode, myPlayerId, { cash: me.cash + cashGain });
+    if (lostClubCash > 0) {
+        await dbTransactPlayer(roomCode, myPlayerId, (current) => ({
+            ...current,
+            cash: (current.cash || 0) + lostClubCash,
+        }));
+    }
+
+    await consumeActionPoint(roomCode, myPlayerId, {});
 }
