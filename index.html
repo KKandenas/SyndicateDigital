@@ -16,6 +16,39 @@
         <div class="screen active" id="start-screen">
             <button id="create-room-btn">💼 Skapa nytt spelrum</button>
             <button id="join-setup-btn" class="btn-secondary" style="margin-top: 5px;">📱 Gå med i rum</button>
+            <button id="rules-btn-start" class="btn-secondary" style="margin-top: 5px;">📖 Regler &amp; hur man vinner</button>
+        </div>
+
+        <!-- REGLER -->
+        <div class="screen" id="rules-screen">
+            <div class="rules-content">
+                <h2 class="rules-title">📖 Regler &amp; vinstvillkor</h2>
+
+                <h3>🎯 Målet med spelet</h3>
+                <p>Ett <strong>gäng</strong> vinner genom att vara först med att säkra <strong>$3000</strong> i sin gömma (håll koll på "🏦 Säkrat" i din HUD).</p>
+                <p><strong>Polisen</strong> vinner genom att antingen redovisa <strong>$2000</strong> till statskassan, eller hitta och plundra varenda gängs svartklubb — beroende på vad som händer först.</p>
+
+                <h3>👥 Roller</h3>
+                <p>En slumpad spelare blir 🚨 polis. Resten fördelas på upp till fyra syndikat: ♠ Nightspades, ♥ Crimson Hearts, ♣ Iron Clovers, ♦ Diamond Syndicate. Varje gängmedlem får en hemlig svartklubb (lager) och en hemlig gömma (bankfack) — synliga bara för dig själv.</p>
+
+                <h3>⏱️ Din tur</h3>
+                <p>3 handlingspoäng (AP) per tur. Varje handling kostar 1 AP: flytta ett steg, slåss/haffa, razzia/sök lönnkrog, eller hämta sprit. Slut på AP → turen går automatiskt vidare.</p>
+
+                <h3>🗺️ Platser</h3>
+                <p><strong>⚓ Hamnen</strong> — enda platsen att hämta sprit (max 3 åt gången). Inga slagsmål här. Polisen får inte gå hit.</p>
+                <p><strong>🚨 Polishuset</strong> — gäng får inte gå hit. Polisen redovisar böter/beslag till statskassan genom att gå hit.</p>
+                <p><strong>🍸 Din svartklubb</strong> (dold) — lämna av sprit för lagring. Varje egen tur säljs 1 enhet automatiskt för $500.</p>
+                <p><strong>💰 Din gömma</strong> (dold) — gå hit för att säkra fickans pengar i banken, utom räckhåll för andra spelare.</p>
+
+                <h3>⚔️ Handlingar</h3>
+                <p><strong>Slagsmål</strong> (gäng mot gäng) — rånar hälften av motståndarens plånbok. Gäng kan inte utmana polisen.</p>
+                <p><strong>Arrestering</strong> (polis mot gäng) — beslagtar all sprit och böter hälften av plånboken.</p>
+                <p><strong>Razzia / sök lönnkrog</strong> — chansa på en gaturuta för att hitta en annan spelares dolda klubb. Hittar du den beslagtas klubbkassan och lagret förstörs — klubben flyttas sedan till en ny, slumpad plats.</p>
+
+                <h3>💡 Taktik</h3>
+                <p>Pengar i fickan är sårbara — säkra dem så fort du kan. Polisen vinner oftast genom att jaga fulla fickor, inte genom att gissa var klubbarna ligger.</p>
+            </div>
+            <button id="rules-close-btn" class="btn-secondary">Tillbaka</button>
         </div>
 
         <!-- NAMN FÖR RUMSSKAPARE (nytt: krävs innan rum skapas) -->
@@ -42,7 +75,10 @@
 
         <!-- SPELSKÄRM -->
         <div class="screen" id="game-screen">
-            <div id="turn-indicator" class="turn-indicator">Laddar...</div>
+            <div class="game-topbar">
+                <button id="rules-btn-game" class="rules-fab" aria-label="Regler &amp; vinstvillkor">❓</button>
+                <div id="turn-indicator" class="turn-indicator">Laddar...</div>
+            </div>
 
             <div class="hud-grid">
                 <div class="hud-item" id="hud-gang-item" style="font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><span id="hud-gang">...</span></div>

@@ -232,6 +232,10 @@ function init() {
 
     document.getElementById("start-game-btn").addEventListener("click", handleStartGame);
 
+    document.getElementById("rules-btn-start").addEventListener("click", ui.openRules);
+    document.getElementById("rules-btn-game").addEventListener("click", ui.openRules);
+    document.getElementById("rules-close-btn").addEventListener("click", ui.closeRules);
+
     document.querySelectorAll(".dpad-btn[data-dx]").forEach((btn) => {
         btn.addEventListener("click", () => {
             const dx = parseInt(btn.dataset.dx, 10);

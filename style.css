@@ -76,6 +76,25 @@ button:disabled { background: #222 !important; color: #555 !important; cursor: n
 .player-list { text-align: left; background: #161616; border-radius: 6px; padding: 10px; border: 1px solid #222; }
 .player-item { padding: 8px 5px; border-bottom: 1px solid #222; font-size: 13px; display: flex; justify-content: space-between; }
 
+/* --- Regler --- */
+.rules-content {
+    text-align: left;
+    max-height: 62vh;
+    overflow-y: auto;
+    background: #161616;
+    border: 1px solid #222;
+    border-radius: 8px;
+    padding: 12px;
+}
+.rules-title { font-size: 15px; margin-bottom: 8px; color: #ecc94b; text-align: center; letter-spacing: 1px; }
+.rules-content h3 {
+    font-size: 11px; color: #ecc94b; text-transform: uppercase;
+    letter-spacing: 0.5px; margin: 12px 0 4px;
+}
+.rules-content h3:first-of-type { margin-top: 0; }
+.rules-content p { font-size: 12px; line-height: 1.5; color: #ccc; margin-bottom: 6px; }
+.rules-content strong { color: #fff; }
+
 /* MOBILANPASSAD FIXERAD KARTA */
 .map-viewport {
     width: 100%;
@@ -228,7 +247,17 @@ button:disabled { background: #222 !important; color: #555 !important; cursor: n
 .pip-ap.pip-filled { background: #22c55e; border-color: #22c55e; transform: scale(1.15); }
 .pip-booze.pip-filled { background: #7c3aed; border-color: #a78bfa; transform: scale(1.15); }
 
+.game-topbar { display: flex; gap: 6px; align-items: stretch; }
+.rules-fab {
+    flex: 0 0 34px;
+    width: 34px;
+    background: #222; border: 1px solid #333; color: #ecc94b;
+    font-size: 14px; font-weight: 900; border-radius: 6px; padding: 0;
+    text-transform: none; letter-spacing: 0;
+}
+
 .turn-indicator {
+    flex: 1;
     display: flex; align-items: center; justify-content: center; gap: 8px;
     text-align: center; padding: 7px; font-weight: bold; font-size: 12px;
     border-radius: 6px; background: #222; color: #aaa;

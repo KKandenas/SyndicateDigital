@@ -31,6 +31,19 @@ export function showScreen(screenId) {
     document.getElementById(screenId).classList.add("active");
 }
 
+// Regler kan öppnas från startskärmen ELLER mitt i ett pågående spel, så vi
+// minns vilken skärm vi kom ifrån för att kunna gå tillbaka dit igen —
+// spelets Firebase-lyssnare fortsätter rendera i bakgrunden under tiden.
+let screenBeforeRules = "start-screen";
+export function openRules() {
+    const current = document.querySelector(".screen.active");
+    if (current && current.id !== "rules-screen") screenBeforeRules = current.id;
+    showScreen("rules-screen");
+}
+export function closeRules() {
+    showScreen(screenBeforeRules);
+}
+
 // --- Toast (ersätter alert()) ---
 let toastContainer = null;
 export function toast(message, variant = "info", durationMs = 3600) {
