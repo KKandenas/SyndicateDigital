@@ -22,6 +22,22 @@ body {
     justify-content: flex-start;
     min-height: 100vh;
     overflow: hidden;
+    transition: background-color 0.2s ease;
+}
+
+/* Startskärmens bakgrundsbild ligger på BODY (fyller alltid hela skärmen,
+   oavsett hur högt innehållet i kortet är) istället för på #start-screen
+   själv, som bara var så högt som knapparna. Kortet görs genomskinligt
+   samtidigt så bilden syns rakt igenom. */
+body:has(#start-screen.active) {
+    background:
+        linear-gradient(180deg, rgba(8,8,10,0.05) 0%, rgba(8,8,10,0.2) 45%, rgba(6,6,8,0.65) 100%),
+        url("assets/start-bg.jpg") center/cover no-repeat;
+}
+body:has(#start-screen.active) .container {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
 }
 
 .container {
@@ -33,10 +49,11 @@ body {
     border-radius: 12px;
     box-shadow: 0 15px 35px rgba(0,0,0,0.8);
     text-align: center;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-h1 { font-size: 20px; letter-spacing: 4px; margin-bottom: 2px; color: #fff; font-weight: 900; }
-.subtitle { font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 12px; }
+h1 { font-size: 20px; letter-spacing: 4px; margin-bottom: 2px; color: #fff; font-weight: 900; text-shadow: 0 2px 6px rgba(0,0,0,0.9); }
+.subtitle { font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 12px; text-shadow: 0 1px 4px rgba(0,0,0,0.9); }
 
 .intro-text {
     font-size: 12px;
@@ -48,16 +65,7 @@ h1 { font-size: 20px; letter-spacing: 4px; margin-bottom: 2px; color: #fff; font
     border-left: 3px solid #ecc94b;
     border-radius: 6px;
     padding: 10px 12px;
-}
-
-#start-screen {
-    border-radius: 10px;
-    overflow: hidden;
-    background:
-        linear-gradient(180deg, rgba(8,8,10,0.05) 0%, rgba(8,8,10,0.15) 50%, rgba(6,6,8,0.55) 100%),
-        url("assets/start-bg.jpg") center/cover;
-    padding: 16px 12px 14px;
-    border: 1px solid #222;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5);
 }
 
 .screen { display: none; }
@@ -158,7 +166,10 @@ button:disabled { background: #222 !important; color: #555 !important; cursor: n
     padding: 4px;
 }
 .map-tile {
-    background: #141414; border: 1px solid #222; border-radius: 4px;
+    background:
+        linear-gradient(180deg, rgba(6,6,8,0.55), rgba(6,6,8,0.75)),
+        url("assets/street.jpg") center/cover;
+    border: 1px solid #222; border-radius: 4px;
     display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
     padding: 3px 1px; font-size: 8px; font-weight: bold; position: relative;
     overflow: hidden;
