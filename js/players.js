@@ -17,6 +17,10 @@ const GANG_POOL = [
     { name: "♦ Diamond Syndicate", x: 4, y: 4 },
 ];
 
+// 1 polis + ett syndikat per plats i GANG_POOL — fler än så finns det varken
+// startpositioner eller syndikatnamn för.
+export const MAX_PLAYERS = GANG_POOL.length + 1;
+
 const POLICE_START = { x: 2, y: 2 };
 const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -65,6 +69,11 @@ export async function joinRoom(roomCode, playerName) {
     const code = roomCode.toUpperCase().trim();
     const room = await dbGet(paths.room(code));
     if (!room) throw new Error("Rummet finns inte!");
+
+    const connectedCount = Object.values(room.players || {}).filter((p) => p.connected !== false).length;
+    if (connectedCount >= MAX_PLAYERS) {
+        throw new Error(`Rummet är fullt (max ${MAX_PLAYERS} spelare).`);
+    }
 
     const playerId = makePlayerId();
     await dbSet(paths.player(code, playerId), newPlayerRecord(playerName.trim(), false));

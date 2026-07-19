@@ -26,6 +26,67 @@ let insideTurnStartTrigger = false; // förhindrar att turstarts-inkomst triggas
 // "fastna" trots att positionen i databasen redan var korrekt).
 let latestEventSeq = 0;
 
+// ---------- Session (överlever sidladdning) ----------
+
+// Sparar bara rums-/spelar-ID — inget känsligt — så en spelare som råkar
+// ladda om fliken (eller får den bakgrundad/avdödad av iOS) kan återuppta
+// SAMMA spelare istället för att bli en ny en. localStorage kan vara
+// otillgängligt (privat läge m.m.); allt nedan degraderar tyst om så.
+const SESSION_KEY = "noir-syndicate-session";
+
+function saveSession(roomCode, playerId) {
+    try {
+        localStorage.setItem(SESSION_KEY, JSON.stringify({ roomCode, playerId }));
+    } catch { /* inget lokalt lagringsutrymme tillgängligt — inte kritiskt */ }
+}
+
+function clearSession() {
+    try {
+        localStorage.removeItem(SESSION_KEY);
+    } catch { /* se ovan */ }
+}
+
+function loadSession() {
+    try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Körs en gång vid sidladdning. Om det finns en sparad session och rummet/
+ * spelaren fortfarande finns kvar (och spelet inte redan avgjorts), återupp-
+ * tas den — annars städas sessionen bort tyst och startskärmen visas som
+ * vanligt.
+ */
+async function attemptResumeSession() {
+    const session = loadSession();
+    if (!session) return;
+
+    const room = await dbGet(paths.room(session.roomCode));
+    const player = room && room.players ? room.players[session.playerId] : null;
+
+    if (!room || !player || room.winner) {
+        clearSession();
+        return;
+    }
+
+    currentRoomCode = session.roomCode;
+    myPlayerId = session.playerId;
+    amILeader = !!player.isLeader;
+
+    await dbUpdateAt(paths.player(session.roomCode, session.playerId), { connected: true });
+    registerPresence(session.roomCode, session.playerId);
+
+    ui.setRoomCodeDisplay(session.roomCode);
+    ui.setStartButtonVisible(amILeader);
+    ui.showScreen(room.status === "playing" ? "game-screen" : "lobby-screen");
+    startListening(session.roomCode);
+    ui.toast("🔌 Återansluten till spelet.", "success");
+}
+
 // ---------- Tur-/AP-motorn ----------
 
 /**
@@ -83,15 +144,20 @@ function findNextConnectedPlayer(players, ids, fromId) {
 // ---------- Rumsflöde ----------
 
 export async function handleCreateRoom(hostName) {
-    const { roomCode, playerId, isLeader } = await createRoom(hostName);
-    currentRoomCode = roomCode;
-    myPlayerId = playerId;
-    amILeader = isLeader;
+    try {
+        const { roomCode, playerId, isLeader } = await createRoom(hostName);
+        currentRoomCode = roomCode;
+        myPlayerId = playerId;
+        amILeader = isLeader;
+        saveSession(roomCode, playerId);
 
-    ui.setRoomCodeDisplay(roomCode);
-    ui.setStartButtonVisible(true);
-    ui.showScreen("lobby-screen");
-    startListening(roomCode);
+        ui.setRoomCodeDisplay(roomCode);
+        ui.setStartButtonVisible(true);
+        ui.showScreen("lobby-screen");
+        startListening(roomCode);
+    } catch (err) {
+        ui.toast(err.message || "Kunde inte skapa rummet. Kolla uppkopplingen och försök igen.", "warning");
+    }
 }
 
 export async function handleJoinRoom(roomCodeInput, nameInput) {
@@ -104,6 +170,7 @@ export async function handleJoinRoom(roomCodeInput, nameInput) {
         currentRoomCode = roomCode;
         myPlayerId = playerId;
         amILeader = isLeader;
+        saveSession(roomCode, playerId);
 
         ui.setRoomCodeDisplay(roomCode);
         ui.setStartButtonVisible(false);
@@ -314,6 +381,7 @@ function wireActionButtons(roomCode, data, me, meIsPolice) {
 
 function init() {
     ui.showScreen("start-screen");
+    attemptResumeSession();
 
     document.getElementById("create-room-btn").addEventListener("click", () => {
         ui.showScreen("host-name-screen");
@@ -358,6 +426,7 @@ function init() {
         stopRoomListener = null;
         currentRoomCode = null;
         myPlayerId = null;
+        clearSession();
         ui.showScreen("start-screen");
     });
 

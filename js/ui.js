@@ -3,7 +3,7 @@
 // document.* själva — de anropar funktioner härifrån.
 
 import { cityMapData } from "./map.js";
-import { isPolice } from "./players.js";
+import { isPolice, MAX_PLAYERS } from "./players.js";
 import { GANG_WIN_CASH, POLICE_WIN_CASH, POLICE_WIN_BUSTS } from "./rules.js";
 
 const MAX_BOOZE = 3;
@@ -70,11 +70,13 @@ export function toast(message, variant = "info", durationMs = 3600) {
 export function renderPlayerList(playersObj) {
     const listEl = document.getElementById("player-list-box");
     if (!listEl) return;
-    listEl.innerHTML = "";
+    const count = Object.keys(playersObj).length;
+    let html = `<div class="player-count">👥 ${count}/${MAX_PLAYERS} spelare</div>`;
     for (const id in playersObj) {
         const p = playersObj[id];
-        listEl.innerHTML += `<div class="player-item"><span>👤 ${escapeHtml(p.name)}</span></div>`;
+        html += `<div class="player-item"><span>👤 ${escapeHtml(p.name)}</span></div>`;
     }
+    listEl.innerHTML = html;
 }
 
 export function setRoomCodeDisplay(code) {

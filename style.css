@@ -105,6 +105,7 @@ button:disabled { background: #222 !important; color: #555 !important; cursor: n
 
 .player-list { text-align: left; background: #161616; border-radius: 6px; padding: 10px; border: 1px solid #222; }
 .player-item { padding: 8px 5px; border-bottom: 1px solid #222; font-size: 13px; display: flex; justify-content: space-between; }
+.player-count { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 5px 8px; }
 
 /* --- Regler --- */
 .rules-content {
