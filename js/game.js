@@ -196,15 +196,24 @@ export async function handleStartGame() {
  * onDisconnect: vi navigerar bara bort inom samma SPA-flik, så uppkopplingen
  * (och därmed onDisconnect-hooken) bryts inte bara för att skärmen byts.
  * Utan detta skulle övriga spelare aldrig få veta att vi lämnat.
+ *
+ * VIKTIGT: lyssnaren stängs av INNAN skrivningen, inte efter. Firebase
+ * speglar lokala skrivningar till den egna onValue-lyssnaren nästan direkt
+ * (innan await:en ens hunnit slå igenom mot servern) — stod stopRoomListener
+ * kvar aktiv skulle vår EGEN handlePlayingState hinna se `connected: false`
+ * på oss själva och tolka det som ett tappat-anslutning-läge, varpå själv-
+ * läkningen där genast skriver tillbaka `connected: true` och gör att turen
+ * aldrig lämnas över (precis buggen som rapporterades).
  */
 async function handleLeaveRoom() {
+    if (stopRoomListener) stopRoomListener();
+    stopRoomListener = null;
+
     if (currentRoomCode && myPlayerId) {
         try {
             await dbUpdateAt(paths.player(currentRoomCode, myPlayerId), { connected: false });
         } catch { /* nätverksfel — vi lämnar lokalt oavsett */ }
     }
-    if (stopRoomListener) stopRoomListener();
-    stopRoomListener = null;
     currentRoomCode = null;
     myPlayerId = null;
     clearSession();
