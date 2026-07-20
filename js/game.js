@@ -190,6 +190,27 @@ export async function handleStartGame() {
     }
 }
 
+/**
+ * Lämnar rummet frivilligt — från lobbyn eller mitt i ett pågående spel.
+ * Skriver `connected: false` DIREKT istället för att förlita sig på
+ * onDisconnect: vi navigerar bara bort inom samma SPA-flik, så uppkopplingen
+ * (och därmed onDisconnect-hooken) bryts inte bara för att skärmen byts.
+ * Utan detta skulle övriga spelare aldrig få veta att vi lämnat.
+ */
+async function handleLeaveRoom() {
+    if (currentRoomCode && myPlayerId) {
+        try {
+            await dbUpdateAt(paths.player(currentRoomCode, myPlayerId), { connected: false });
+        } catch { /* nätverksfel — vi lämnar lokalt oavsett */ }
+    }
+    if (stopRoomListener) stopRoomListener();
+    stopRoomListener = null;
+    currentRoomCode = null;
+    myPlayerId = null;
+    clearSession();
+    ui.showScreen("start-screen");
+}
+
 // ---------- Vinstvillkor ----------
 
 /**
@@ -414,21 +435,24 @@ function init() {
     });
 
     document.getElementById("start-game-btn").addEventListener("click", handleStartGame);
+    document.getElementById("lobby-leave-btn").addEventListener("click", handleLeaveRoom);
+    document.getElementById("rules-leave-btn").addEventListener("click", handleLeaveRoom);
 
-    document.getElementById("rules-btn-start").addEventListener("click", ui.openRules);
-    document.getElementById("rules-btn-game").addEventListener("click", ui.openRules);
+    document.getElementById("rules-btn-start").addEventListener("click", () => {
+        ui.setLeaveButtonVisible(false);
+        ui.setRulesRoomCode(null);
+        ui.openRules();
+    });
+    document.getElementById("rules-btn-game").addEventListener("click", () => {
+        ui.setLeaveButtonVisible(true);
+        ui.setRulesRoomCode(currentRoomCode);
+        ui.openRules();
+    });
     document.getElementById("rules-close-btn").addEventListener("click", ui.closeRules);
 
     document.getElementById("leaderboard-toggle").addEventListener("click", ui.toggleLeaderboard);
 
-    document.getElementById("victory-home-btn").addEventListener("click", () => {
-        if (stopRoomListener) stopRoomListener();
-        stopRoomListener = null;
-        currentRoomCode = null;
-        myPlayerId = null;
-        clearSession();
-        ui.showScreen("start-screen");
-    });
+    document.getElementById("victory-home-btn").addEventListener("click", handleLeaveRoom);
 
     document.querySelectorAll(".dpad-btn[data-dx]").forEach((btn) => {
         btn.addEventListener("click", () => {

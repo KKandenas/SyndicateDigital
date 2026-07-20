@@ -97,11 +97,20 @@ button:disabled { background: #222 !important; color: #555 !important; cursor: n
 .btn-success { background: #15803d; }
 .btn-police { background: #1d4ed8; }
 .btn-gang { background: #b45309; }
+.btn-danger { border-color: #7f1d1d; color: #fca5a5; }
 
 .room-code-display {
     font-size: 32px; font-weight: 900; letter-spacing: 5px; color: #ecc94b;
     margin: 10px 0; background: #1a1a1a; padding: 10px; border-radius: 6px; border: 1px dashed #ecc94b;
 }
+
+.rules-room-code {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    background: #1a1a1a; border: 1px dashed #ecc94b; border-radius: 6px;
+    padding: 8px 10px;
+}
+.rules-room-code-label { font-size: 9px; color: #999; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; }
+.rules-room-code-value { font-size: 18px; font-weight: 900; color: #ecc94b; letter-spacing: 3px; }
 
 .player-list { text-align: left; background: #161616; border-radius: 6px; padding: 10px; border: 1px solid #222; }
 .player-item { padding: 8px 5px; border-bottom: 1px solid #222; font-size: 13px; display: flex; justify-content: space-between; }

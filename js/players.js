@@ -3,7 +3,7 @@
 // syndikat/polis-roll när spelet startar. Inga UI-DOM-anrop här.
 
 import { dbSet, dbGet, dbUpdate, paths, registerPresence } from "./firebase.js";
-import { generateSecretsForPlayers } from "./map.js";
+import { generateSecretsForPlayers, pickRandomOpenTile } from "./map.js";
 
 export const ROLE = {
     POLICE: "police",
@@ -69,6 +69,7 @@ export async function joinRoom(roomCode, playerName) {
     const code = roomCode.toUpperCase().trim();
     const room = await dbGet(paths.room(code));
     if (!room) throw new Error("Rummet finns inte!");
+    if (room.winner) throw new Error("Spelet är redan slut — be någon skapa ett nytt rum.");
 
     const connectedCount = Object.values(room.players || {}).filter((p) => p.connected !== false).length;
     if (connectedCount >= MAX_PLAYERS) {
@@ -76,7 +77,41 @@ export async function joinRoom(roomCode, playerName) {
     }
 
     const playerId = makePlayerId();
-    await dbSet(paths.player(code, playerId), newPlayerRecord(playerName.trim(), false));
+    const record = newPlayerRecord(playerName.trim(), false);
+    const updates = { [paths.player(code, playerId)]: record };
+
+    if (room.status === "playing") {
+        // Spelet har redan börjat — en sen spelare måste få en riktig roll
+        // direkt (syndikat, startposition, hemlig klubb/gömma), annars blir
+        // de en spökspelare utan roll som aldrig kan agera eller ha en tur.
+        const takenSyndicates = new Set(Object.values(room.players || {}).map((p) => p.syndicate));
+        const gang = GANG_POOL.find((g) => !takenSyndicates.has(g.name));
+        if (!gang) throw new Error("Alla gäng-platser är redan upptagna.");
+
+        record.syndicate = gang.name;
+        record.role = ROLE.GANG;
+        record.x = gang.x;
+        record.y = gang.y;
+
+        // Ny hemlig klubb/gömma, kollisionsfri mot ALLA redan utdelade
+        // hemligheter — samma princip som razzia-omflytt i combat.js.
+        const existingSecrets = room.secrets || {};
+        const occupied = [];
+        for (const pid in existingSecrets) {
+            if (existingSecrets[pid].club) occupied.push(existingSecrets[pid].club);
+            if (existingSecrets[pid].stash) occupied.push(existingSecrets[pid].stash);
+        }
+        const club = pickRandomOpenTile(occupied);
+        occupied.push(club);
+        const stash = pickRandomOpenTile(occupied);
+
+        updates[paths.secret(code, playerId)] = {
+            club: { x: club.x, y: club.y, stock: 0, clubCash: 0 },
+            stash: { x: stash.x, y: stash.y },
+        };
+    }
+
+    await dbUpdate(updates);
     registerPresence(code, playerId);
 
     return { roomCode: code, playerId, isLeader: false };

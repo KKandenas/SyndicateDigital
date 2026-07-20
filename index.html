@@ -22,6 +22,10 @@
 
         <!-- REGLER -->
         <div class="screen" id="rules-screen">
+            <div class="rules-room-code" id="rules-room-code" style="display:none;">
+                <span class="rules-room-code-label">Rumskod — för sena spelare</span>
+                <span class="rules-room-code-value" id="rules-room-code-value">----</span>
+            </div>
             <div class="rules-content">
                 <h2 class="rules-title">📖 Regler &amp; vinstvillkor</h2>
 
@@ -50,6 +54,7 @@
                 <p>Pengar i fickan är sårbara — säkra dem så fort du kan. Polisen vinner oftast genom att jaga fulla fickor, inte genom att gissa var klubbarna ligger.</p>
             </div>
             <button id="rules-close-btn" class="btn-secondary">Tillbaka</button>
+            <button id="rules-leave-btn" class="btn-secondary btn-danger" style="display:none;">🚪 Lämna spelet</button>
         </div>
 
         <!-- NAMN FÖR RUMSSKAPARE (nytt: krävs innan rum skapas) -->
@@ -72,6 +77,7 @@
             <div class="room-code-display" id="display-code">----</div>
             <div class="player-list" id="player-list-box"></div>
             <button id="start-game-btn" class="btn-success" style="margin-top: 10px; display: none;">STARTA SPELET 🚀</button>
+            <button id="lobby-leave-btn" class="btn-secondary btn-danger" style="margin-top: 5px;">🚪 Lämna rummet</button>
         </div>
 
         <!-- SPELSKÄRM -->

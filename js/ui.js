@@ -48,6 +48,26 @@ export function closeRules() {
     showScreen(screenBeforeRules);
 }
 
+// "Lämna spelet"-knappen och rumskoden i regelskärmen är bara relevanta när
+// den öppnas mitt i ett pågående spel, inte från startskärmen innan man ens
+// gått med i ett rum.
+export function setLeaveButtonVisible(visible) {
+    const btn = document.getElementById("rules-leave-btn");
+    if (btn) btn.style.display = visible ? "block" : "none";
+}
+
+export function setRulesRoomCode(code) {
+    const wrap = document.getElementById("rules-room-code");
+    const valueEl = document.getElementById("rules-room-code-value");
+    if (!wrap || !valueEl) return;
+    if (code) {
+        valueEl.innerText = code;
+        wrap.style.display = "flex";
+    } else {
+        wrap.style.display = "none";
+    }
+}
+
 // --- Toast (ersätter alert()) ---
 let toastContainer = null;
 export function toast(message, variant = "info", durationMs = 3600) {
